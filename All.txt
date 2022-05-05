@@ -236,3 +236,280 @@ Defaultnya, StreamHandler akan mengirim mulai level DEBUG
 Jika kita ingin mengubahnya, kita bisa mengubah level mulai ketika membuat object StreamHandler
 
 Kode : StreamHandler Level
+   public function testLevel()
+    {
+        $logger = new Logger(LevelTest::class);
+        $logger->pushHandler(new StreamHandler("php://stderr"));
+        $logger->pushHandler(new StreamHandler(__DIR__ . "/../application.log"));
+        $logger->pushHandler(new StreamHandler(__DIR__ . "/../error.log", Logger::ERROR));
+
+        $logger->debug("This is debug");
+        $logger->info("This is info");
+        $logger->notice("This is notice");
+        $logger->warning("This is warning");
+        $logger->error("This is error");
+        $logger->critical("This is critical");
+        $logger->alert("This is alert");
+        $logger->emergency("This is emergency");
+
+        self::assertNotNull($logger);
+
+    }
+
+Context
+Selain mengirim informasi log event berupa string, kita juga menambahkan informasi lainnya berupa array ketika melakukan logging
+Informasi tambahan ini dinamakan Context
+Context ini sangat bermanfaat jika memang kita ingin menambahkan informasi yang berhubungan dengan log event tersebut, sehingga kita tidak perlu membuat format pesan secara manual, cukup kirim data Context berupa Array pada parameter kedua pada method logging nya
+
+Kode : Context
+<?php
+
+namespace ProgrammerZamanNow\Belajar\PHP\MVC;
+
+use Monolog\Handler\StreamHandler;
+use Monolog\Logger;
+use Monolog\Test\TestCase;
+
+class ContextTest extends TestCase
+{
+    public function testContext()
+    {
+
+        $logger = new Logger(ContextTest::class);
+        $logger->pushHandler(new StreamHandler("php://stderr"));
+
+        $logger->info("This is log message", ["username" => "khannedy"]);
+        $logger->info("Try login user", ["username" => "khannedy"]);
+        $logger->info("Success login user", ["username" => "khannedy"]);
+        $logger->info("Tidak ada context");
+
+        self::assertNotNull($logger);
+
+    }
+
+}
+
+Processor
+Processor merupakan cara lain jika kita ingin menambahkan informasi ke log event
+Jika informasi Context harus kita kirim setiap kali kita melakukan logging, pada Processor, kita bisa membuat class Processor yang akan dieksekusi setiap kali log event dikirim
+Dengan Processor, kita bisa menambahkan informasi tambahan pada log event yang dikirim
+Untuk membuat Processor, kita bisa langsung menggunakan Callable atau membuat class turunan dari ProcessorInterface
+
+Kode : Processor
+<?php
+
+namespace ProgrammerZamanNow\Belajar\PHP\MVC;
+
+use Monolog\Handler\StreamHandler;
+use Monolog\Logger;
+use Monolog\Processor\GitProcessor;
+use Monolog\Processor\HostnameProcessor;
+use Monolog\Processor\MemoryUsageProcessor;
+use Monolog\Test\TestCase;
+
+class ProcessorTest extends TestCase
+{
+    public function testProcessorRecord()
+    {
+        $logger = new Logger(ProcessorTest::class);
+        $logger->pushHandler(new StreamHandler("php://stderr"));
+        $logger->pushProcessor(new GitProcessor());
+        $logger->pushProcessor(new MemoryUsageProcessor());
+        $logger->pushProcessor(new HostnameProcessor());
+        $logger->pushProcessor(function ($record){
+            $record["extra"]["pzn"] = [
+                "app" => "Belajar PHP Logging",
+                "author" => "Programmer Zaman Now"
+            ];
+            return $record;
+        });
+
+        $logger->info("Hello World", ["username"=>"eko"]);
+        $logger->info("Hello World");
+        $logger->info("Hello World Lagi");
+
+        self::assertNotNull($logger);
+
+    }
+
+}
+
+Monolog Processor
+Sama seperti Handler, Monolog juga sudah banyak menyediakan class implementasi dari ProcessorInterface yang bisa kita gunakan sesuai kebutuhan kita
+Ini sangat berguna ketika kita memang ingin menambahkan informasi secara umum ke semua log event yang kita buat
+
+Daftar Monolog Processor
+
+Kode : Monolog Processor
+    public function testProcessorRecord()
+    {
+        $logger = new Logger(ProcessorTest::class);
+        $logger->pushHandler(new StreamHandler("php://stderr"));
+        $logger->pushProcessor(new GitProcessor());
+        $logger->pushProcessor(new MemoryUsageProcessor());
+        $logger->pushProcessor(new HostnameProcessor());
+        $logger->pushProcessor(function ($record){
+            $record["extra"]["pzn"] = [
+                "app" => "Belajar PHP Logging",
+                "author" => "Programmer Zaman Now"
+            ];
+            return $record;
+        });
+
+        $logger->info("Hello World", ["username"=>"eko"]);
+        $logger->info("Hello World");
+        $logger->info("Hello World Lagi");
+
+        self::assertNotNull($logger);
+
+    }
+
+Reset Handler dan Processor
+
+Resettable Interface
+Saat kita menggunakan Handler dan Processor, kadang ada beberapa Handler dan Processor yang menyimpan beberapa datanya di Memory
+Jika proses object Logger mengikuti alur hidup Web Request, hal itu aman-aman saja karena setelah web request selesai, semua data akan dihapus dari memory
+Namun jika ternyata kita melakukan pekerjaan yang lama, misal long running job, maka sangat disarankan untuk secara regular melakukan reset Handler dan Processor
+Beberapa Handler dan Processor merupakan implementasi ResettableInterface yang memiliki method reset() untuk melakukan reset data
+
+Resettable Logger
+Melakukan reset semua Handler dan Processor yang kita gunakan lumayan ribet jika dilakukan
+Untungnya, Logger memiliki method reset() yang bisa kita gunakan untuk melakukan reset semua Handler dan Processor
+Kita cukup memanggil method tersebut untuk melakukan reset Handler dan Processor
+
+Kode : Reset Method di Logger
+   public function reset(): void
+    {
+        foreach ($this->handlers as $handler) {
+            if ($handler instanceof ResettableInterface) {
+                $handler->reset();
+            }
+        }
+
+        foreach ($this->processors as $processor) {
+            if ($processor instanceof ResettableInterface) {
+                $processor->reset();
+            }
+        }
+    }
+
+Kode : Reset Logger
+<?php
+
+namespace ProgrammerZamanNow\Belajar\PHP\MVC;
+
+use Monolog\Handler\StreamHandler;
+use Monolog\Logger;
+use Monolog\Processor\GitProcessor;
+use Monolog\Processor\HostnameProcessor;
+use Monolog\Processor\MemoryUsageProcessor;
+use Monolog\Test\TestCase;
+
+class ResetTest extends TestCase
+{
+    public function testReset()
+    {
+        $logger = new Logger(ResetTest::class);
+        $logger->pushHandler(new StreamHandler("php://stderr"));
+        $logger->pushHandler(new StreamHandler(__DIR__ . '/../application.log'));
+        $logger->pushProcessor(new GitProcessor());
+        $logger->pushProcessor(new MemoryUsageProcessor());
+        $logger->pushProcessor(new HostnameProcessor());
+
+        for ($i = 0; $i < 10000; $i++){
+            $logger->info("Perulangan ke-$i");
+            if($i % 100 == 0){
+                $logger->reset();
+            }
+        }
+
+        self::assertNotNull($logger);
+    }
+
+}
+
+Formatter
+Saat Handler mengirim log event ke tujuan (misal file atau console), Handler akan melakukan proses format log event terlebih dahulu
+Setiap Handler biasanya memiliki default Formatter, contohnya StreamHandler menggunakan LineFormatter
+Jika kita ingin membuat Formatter sendiri, kita bisa membuat class turunan dari FormatterInterface
+
+Monolog Formatter
+Monolog juga sudah menyediakan banyak sekali implementasi dari FormaterInterface
+Kita bisa menggunakannya sesuai dengan kebutuhan kita
+
+Daftar Monolog Formatter
+
+Kode : Monolog Formatter
+<?php
+
+namespace ProgrammerZamanNow\Belajar\PHP\MVC;
+
+use Monolog\Formatter\JsonFormatter;
+use Monolog\Handler\StreamHandler;
+use Monolog\Logger;
+use Monolog\Processor\GitProcessor;
+use Monolog\Processor\HostnameProcessor;
+use Monolog\Processor\MemoryUsageProcessor;
+use Monolog\Test\TestCase;
+
+class FormatterTest extends TestCase
+{
+    public function testFormatter()
+    {
+        $logger = new Logger(FormatterTest::class);
+
+        $handler = new StreamHandler("php://stderr");
+        $handler->setFormatter(new JsonFormatter());
+
+        $logger->pushHandler($handler);
+        $logger->pushProcessor(new GitProcessor());
+        $logger->pushProcessor(new MemoryUsageProcessor());
+        $logger->pushProcessor(new HostnameProcessor());
+
+        $logger->info("Belajar PHP Logging", ["username" => "khannedy"]);
+        $logger->info("Belajar PHP Logging Lagi", ["username" => "khannedy"]);
+
+        self::assertNotNull($logger);
+
+    }
+
+}
+
+Rotating File Handler
+Saat menggunakan file sebagai media penyimpanan log, kadang semakin lama, ukuran file akan semakin besar
+StreamHandler secara default akan selalu mengirim log event ke file yang sama terus menerus
+Untungnya ada class turunan dari StreamHandler bernama RotatingFileHandler
+Class ini, di khususkan untuk mengirim log event ke file, namun bisa secara otomatis membuat file baru setiap hari, sehingga semua log tidak akan disimpan di dalam satu file
+Ini bagus untuk memastikan ukuran log tidak terlalu besar, dan mudah untuk menghapus log lama yang sudah tidak kita gunakan lagi
+
+Kode : Rotating File Handler
+<?php
+
+namespace ProgrammerZamanNow\Belajar\PHP\MVC;
+
+use Monolog\Handler\RotatingFileHandler;
+use Monolog\Handler\StreamHandler;
+use Monolog\Logger;
+use Monolog\Test\TestCase;
+
+class RotatingFileTest extends TestCase
+{
+    public function testRotating()
+    {
+        $logger = new Logger(RotatingFileTest::class);
+        $logger->pushHandler(new StreamHandler("php://stderr"));
+        $logger->pushHandler(new RotatingFileHandler(__DIR__ . '/../app.log', 10, Logger::INFO));
+
+        $logger->info("Belajar PHP");
+        $logger->info("Belajar PHP OOP");
+        $logger->info("Belajar PHP Web");
+        $logger->info("Belajar PHP Database");
+
+        self::assertNotNull($logger);
+
+    }
+
+}
+
+Materi Selanjutnya
+PHP RESTful API
