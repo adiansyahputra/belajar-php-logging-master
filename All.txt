@@ -32,3 +32,207 @@ Bahkan framework Laravel pun menggunakan Monolog
 https://packagist.org/packages/monolog/monolog 
 
 Membuat Project
+
+Clone Project
+https://github.com/ProgrammerZamanNow/belajar-php-mvc 
+
+Menambah Dependency
+https://packagist.org/packages/monolog/monolog 
+
+Logger
+Logger merupakan class yang digunakan untuk melakukan logging
+Untuk membuat object Logger sangat mudah, kita cukup gunakan nama logger yang kita inginkan di parameter constructor nya
+
+Kode : Membuat Logger
+<?php
+
+namespace ProgrammerZamanNow\Belajar\PHP\MVC;
+
+use Monolog\Logger;
+
+class LoggerTest extends \PHPUnit\Framework\TestCase
+{
+    public function testLogger()
+    {
+        $logger = new Logger("ProgrammerZamanNow");
+
+        self::assertNotNull($logger);
+    }
+
+    public function testLoggerWithName()
+    {
+        $logger = new Logger(LoggerTest::class);
+
+        self::assertNotNull($logger);
+    }
+
+
+}
+
+Nama Logger dengan Nama Class
+Salah satu kebiasaan ketika membuat object Logger, adalah menggunakan nama logger dengan nama class lokasi Logger nya
+Misal jika kita membuat object Logger di class ProductController, maka kita akan menggunakan nama logger dengan ProductController::class
+Salah satu kegunaannya adalah, kita bisa tahu lokasi kita melakukan logging dari nama Logger
+
+Kode : Membuat Logger dengan Nama
+    public function testLoggerWithName()
+    {
+        $logger = new Logger(LoggerTest::class);
+
+        self::assertNotNull($logger);
+    }
+
+Handler
+Monolog memilih fitur yang bernama Handler
+Handler merupakan object yang bertugas mengirim aktivitas log event yang kira kirim ke Logger ke target yang dituju
+Secara default, tidak ada Handler sama sekali ketika kita membuat Logger, kita perlu menambahkan Handler ke Logger secara manual
+Handler di Monolog di representasikan dalam interface HandlerInterface
+https://github.com/Seldaek/monolog/blob/main/src/Monolog/Handler/HandlerInterface.php 
+
+Implementasi Handler
+Karena HandlerInterface adalah sebuah Interface, maka untuk menambahkan Handler, kita perlu membuat implementasi class nya
+Tapi tenang saja, Monolog sudah menyediakan banyak sekali Handler yang kita butuhkan
+
+Contoh Handler
+
+Stream Handler
+Salah satu Handler yang sering sekali digunakan adalah StreamHandler
+StreamHandler merupakan Handler yang bisa kita gunakan untuk mengirim log event ke File atau ke Console
+https://github.com/Seldaek/monolog/blob/main/src/Monolog/Handler/StreamHandler.php 
+
+Kode : Menambah Handler
+<?php
+
+namespace ProgrammerZamanNow\Belajar\PHP\MVC;
+
+use Monolog\Handler\ElasticsearchHandler;
+use Monolog\Handler\SlackHandler;
+use Monolog\Handler\StreamHandler;
+use Monolog\Logger;
+use Monolog\Test\TestCase;
+
+class HandlerTest extends TestCase
+{
+    public function testHandler()
+    {
+        $logger = new Logger(HandlerTest::class);
+
+        $logger->pushHandler(new StreamHandler("php://stderr"));
+        $logger->pushHandler(new StreamHandler(__DIR__ . "/../application.log"));
+        // $logger->pushHandler(new SlackHandler())
+        // $logger->pushHandler(new ElasticsearchHandler())
+
+        self::assertNotNull($logger);
+        self::assertEquals(2, sizeof($logger->getHandlers()));
+    }
+
+}
+
+Logging
+Setelah kita membuat Logger dan menambah Handler ke Logger
+Kita bisa mulai melakukan logging
+Ada banyak method di Logger yang bisa kita gunakan untuk melakukan logging, dan akan kita bahas detail di bab Level
+
+Kode : Melakukan Logging
+<?php
+
+namespace ProgrammerZamanNow\Belajar\PHP\MVC;
+
+use Monolog\Handler\StreamHandler;
+use Monolog\Logger;
+use Monolog\Test\TestCase;
+
+class LoggingTest extends TestCase
+{
+    public function testLogging()
+    {
+        $logger = new Logger(HandlerTest::class);
+
+        $logger->pushHandler(new StreamHandler("php://stderr"));
+        $logger->pushHandler(new StreamHandler(__DIR__ . "/../application.log"));
+
+        $logger->info("Belajar Pemrograman PHP Logging");
+        $logger->info("Selamat Datang di Programmer Zaman Now");
+        $logger->info("Ini Informasi Aplikasi Logging");
+
+        self::assertNotNull($logger);
+
+    }
+
+
+}
+
+Level
+Saat kita mengirim log event, kita bisa menentukan level dari log event tersebut
+Monolog mendukung banyak sekali level, dimana cara kerja level itu bertingkat, dari yang paling rendah kepaling tinggi
+Biasanya level digunakan untuk menentukan jenis log event, misal jika log event berupa informasi, kita gunakan level info, jika berupa masalah, kita gunakan level error, jika berupa informasi untuk proses debugging, kita gunakan level debug, dan lain-lain
+
+Daftar Level
+ Level
+Logger Method
+Value
+DEBUG
+debug()
+100
+INFO
+info()
+200
+NOTICE
+notice()
+250
+WARNING
+warning()
+300
+ERROR
+error()
+400
+CRITICAL
+critical()
+500
+ALERT
+alert()
+550
+EMERGENCY
+emergency()
+600
+
+Kode : Level
+<?php
+
+namespace ProgrammerZamanNow\Belajar\PHP\MVC;
+
+use Monolog\Handler\StreamHandler;
+use Monolog\Logger;
+use Monolog\Test\TestCase;
+
+class LevelTest extends TestCase
+{
+    public function testLevel()
+    {
+        $logger = new Logger(LevelTest::class);
+        $logger->pushHandler(new StreamHandler("php://stderr"));
+        $logger->pushHandler(new StreamHandler(__DIR__ . "/../application.log"));
+        $logger->pushHandler(new StreamHandler(__DIR__ . "/../error.log", Logger::ERROR));
+
+        $logger->debug("This is debug");
+        $logger->info("This is info");
+        $logger->notice("This is notice");
+        $logger->warning("This is warning");
+        $logger->error("This is error");
+        $logger->critical("This is critical");
+        $logger->alert("This is alert");
+        $logger->emergency("This is emergency");
+
+        self::assertNotNull($logger);
+
+    }
+
+
+}
+
+StreamHandler Level
+Salah satu kelebihan StreamHandler adalah, dia bisa menentukan mulai level mana log event harus dikirim
+Defaultnya, StreamHandler akan mengirim mulai level DEBUG
+Jika kita ingin mengubahnya, kita bisa mengubah level mulai ketika membuat object StreamHandler
+
+Kode : StreamHandler Level
