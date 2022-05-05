@@ -1,0 +1,34 @@
+Pengenalan Logging
+Log file adalah file yang berisikan informasi kejadian dari sebuah sistem
+Biasanya dalam log file, terdapat informasi waktu kejadian dan pesan kejadian
+Logging adalah aksi menambah informasi log ke log file
+Logging sudah menjadi standard industri untuk menampilkan informasi yang terjadi di aplikasi yang kita buat
+Logging bukan hanya untuk menampilkan informasi, kadang digunakan untuk proses debugging ketika terjadi masalah di aplikasi kita
+
+Diagram Logging
+
+Ekosistem Logging
+
+Logging Library
+
+PHP Logging
+PHP sendiri sebenarnya memiliki function yang dikhususkan untuk logging
+Namun saat ini, kebanyakan programmer tidak menggunakannya
+Hal ini dikarenakan penggunaannya yang kurang flexible dan juga fiturnya sangan sederhana
+https://www.php.net/manual/en/function.error-log.php 
+
+Logging Library
+Diluar PHP Logging, banyak sekali library yang bisa kita gunakan untuk logging, seperti :
+Monolog : https://github.com/Seldaek/monolog 
+Analog : https://github.com/jbroadway/analog 
+Log4PHP : https://logging.apache.org/log4php/ 
+KLogger : https://github.com/katzgrau/KLogger 
+dan lain-lain
+
+Monolog
+Pada kelas ini kita akan menggunakan Monolog
+Monolog adalah library logging untuk PHP yang saat ini paling populer
+Bahkan framework Laravel pun menggunakan Monolog
+https://packagist.org/packages/monolog/monolog 
+
+Membuat Project
